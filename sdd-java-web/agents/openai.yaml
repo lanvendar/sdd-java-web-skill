@@ -1,4 +1,4 @@
 interface:
   display_name: "SDD Java Web"
   short_description: "Structure-driven Java Web feature design skill"
-  default_prompt: "Design and implement a Java Web feature using database, backend, and frontend data models as the source of truth."
+  default_prompt: "Use $sdd-java-web to design and implement a Java Web feature with explicit data ownership and lifecycle boundaries."

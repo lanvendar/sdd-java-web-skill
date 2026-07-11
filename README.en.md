@@ -8,7 +8,7 @@ This project is not a traditional Java Web application. It is a reusable develop
 
 Much of the friction between systems does not come from code being insufficiently clever. It comes from different systems holding different structural understandings of the same thing: the database has one set of columns, the backend has one set of objects, the API has another naming model, and the frontend has its own state shape. Each layer may look reasonable in isolation, but the conversions, patches, compatibility logic, and rework between layers keep draining engineering energy.
 
-If designers define business objects, API boundaries, and data flows from data structures at the beginning, system boundaries become clearer. Data structure is not an implementation detail. It is a collaboration language. It is not owned by one layer; it is the shared contract that runs through database, service, API, and UI.
+If designers define business objects, API boundaries, and data flows from data structures at the beginning, system boundaries become clearer. Data structure is not an implementation detail. It is a collaboration language. The overall data definition is the shared contract across database, service, API, and UI, while every concrete structure still declares its owner and valid boundary.
 
 ## Core Idea
 
@@ -19,6 +19,7 @@ Before implementing a feature, define the database, backend, and frontend data m
 This means:
 
 - Fields, DTOs, SQL, API request shapes, and API response shapes must appear in the data definition document first.
+- Every structure participating in the data flow must define its owner, origin, valid scope, conversion or termination point, and any required mutation and retention rules.
 - Behavior, call chains, file changes, service logic, and integrations belong in the design document.
 - If implementation needs to diverge from the documents, update the documents first, then change code.
 - Do not force every feature into CRUD. List only the APIs, service methods, and UI interactions that actually exist.
@@ -31,7 +32,7 @@ Traditional development often starts from pages, endpoints, or task lists, while
 - **Cross-system friction**: external systems, internal modules, queues, imports, exports, and files all describe the same business object with different structures. Conversion logic becomes hidden complexity.
 - **Cross-team friction**: product, frontend, backend, and QA discuss the same feature without a shared structural language, so requirement boundaries keep drifting.
 
-Structure-driven development moves this friction into the design stage. Define objects, fields, constraints, sources, targets, and conversion rules first. Then discuss how APIs, pages, services, and storage should work around those structures.
+Structure-driven development moves this friction into the design stage. Define objects, fields, constraints, owners, sources, valid scopes, targets, and conversion rules first. Then discuss how APIs, pages, services, and storage should work around those structures.
 
 Once the data structure is stable, boundaries between layers become naturally clearer:
 
@@ -41,7 +42,7 @@ Once the data structure is stable, boundaries between layers become naturally cl
 - The frontend owns display, interaction, and local state.
 - The integration layer owns structure conversion and external semantic alignment.
 
-Each layer keeps its responsibility, but no layer invents its own version of the same business object.
+Each layer keeps its own responsibilities and structures, but no layer silently invents or reuses a version of the same business object beyond its declared boundary.
 
 ## Project Structure
 
@@ -64,13 +65,14 @@ The Skill entry file. It defines when `sdd-java-web` should be used, the core ru
 
 The data definition template and the center of this method. It covers:
 
+- Structure Ownership and Lifecycle
 - Database Data Model
 - Java Backend Data Model
 - Frontend Data Model
 - Data Mapping Rules
 - Reused Structures
 
-It requires explicit primary keys, candidate keys, partition strategies, field comments, DTO fields, frontend query models, page display models, form models, state models, and cross-layer conversion rules.
+It requires explicit structure ownership and lifecycle boundaries, primary keys, candidate keys, partition strategies, field comments, DTO fields, frontend query models, page display models, form models, state models, and cross-layer conversion rules.
 
 ### `references/design.md`
 
@@ -78,6 +80,7 @@ The feature design template. It describes behavior beyond data structures, inclu
 
 - Capability boundary
 - Data flow
+- Ownership and lifecycle boundary validation
 - API contract
 - File changes
 - Controller / Service / Mapper design
@@ -86,7 +89,7 @@ The feature design template. It describes behavior beyond data structures, inclu
 
 ### `references/convention-discovery.md`
 
-The project convention discovery guide. Before designing or implementing a feature, it directs the agent to read `docs/.sdd/project-index.yml` and `docs/.sdd/project-conventions.md` in the target project, then infer module layout, package structure, build commands, API wrappers, pagination, error handling, routing, and persistence style from neighboring code.
+The project convention discovery guide. Before designing or implementing a feature, it directs the agent to read `docs/.sdd/project-index.yml` and `docs/.sdd/project-conventions.md` in the target project, then infer module layout, package structure, data-structure ownership and lifecycle boundaries, build commands, API wrappers, pagination, error handling, routing, and persistence style from neighboring code.
 
 ### `agents/openai.yaml`
 
@@ -100,13 +103,16 @@ Agent display configuration. It provides the Skill display name, short descripti
 2. **Define data structures**
    Create or update `{feature}-data-define.md` for the target feature, locking down database, backend, and frontend data models first.
 
-3. **Design behavior and flow**
+3. **Define ownership and lifecycle**
+   Use project conventions, existing design, and consistent neighboring code to define each structure's origin, valid scope, mutation authority, exit, and retention. Escalate conflicting, risky, incomplete, or unsupported boundaries to the designer.
+
+4. **Design behavior and flow**
    Create or update `{feature}-design.md` to describe how data moves through pages, API clients, Controllers, Services, Mappers, databases, and external systems.
 
-4. **Implement in the project style**
+5. **Implement in the project style**
    Reuse the target project's package layout, response models, validation style, pagination conventions, persistence patterns, and frontend component style.
 
-5. **Verify with the smallest reliable command**
+6. **Verify with the smallest reliable command**
    Run compile, tests, build, lint, or manual verification commands defined by project conventions, and record the result.
 
 ## Recommended Documentation Layout
@@ -153,6 +159,7 @@ Complex features may split design into multiple documents, but they should still
 - **Single Source of Truth**: the data definition document is the structural source of truth.
 - **Document First, Code Second**: update structures and design before implementation.
 - **Local Convention First**: follow the target project's existing conventions first.
+- **Lifecycle-Bounded Structures**: every structure participating in the data flow has an explicit owner and lifecycle boundary; unresolved boundaries block finalized design and implementation.
 - **Thin Controller, Rich Service**: keep Controllers thin and put business rules in Services.
 - **No Phantom Fields**: fields that are not documented should not appear in implementation.
 - **No Forced CRUD**: define only the APIs, service methods, and page behavior that actually exist.
